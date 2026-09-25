@@ -2,11 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import ChatContainer from '@/components/ChatContainer';
+import SetupWizard from '@/components/SetupWizard';
 import { LTIContext } from '@/types';
+import { getSetupStatus } from '@/utils/setup';
 
 export default function ChatPage() {
   const [ltiContext, setLTIContext] = useState<LTIContext | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [setupComplete, setSetupComplete] = useState(false);
 
   useEffect(() => {
     // Get LTI context from URL parameters (set by LTI redirect)
@@ -22,6 +25,8 @@ export default function ChatPage() {
           courseName: urlParams.get('courseName') || 'BADM 350: IT for Networked Organizations'
         };
         setLTIContext(ltiContextFromURL);
+        // Check setup status for this course
+        setSetupComplete(getSetupStatus(ltiContextFromURL.courseId));
         // Clean up URL after extracting parameters
         window.history.replaceState({}, '', '/');
       } else {
@@ -33,10 +38,16 @@ export default function ChatPage() {
           courseName: 'BADM 350: IT for Networked Organizations'
         };
         setLTIContext(fallbackContext);
+        // Check setup status for fallback course
+        setSetupComplete(getSetupStatus(fallbackContext.courseId));
       }
       setIsLoading(false);
     }
   }, []);
+
+  const handleSetupComplete = () => {
+    setSetupComplete(true);
+  };
 
   if (isLoading) {
     return (
@@ -72,6 +83,11 @@ export default function ChatPage() {
         </div>
       </div>
     );
+  }
+
+  // Show setup wizard if not completed
+  if (!setupComplete) {
+    return <SetupWizard ltiContext={ltiContext} onSetupComplete={handleSetupComplete} />;
   }
 
   return (
